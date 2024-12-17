@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useMemo } from "react";
 import { useJsApiLoader, GoogleMap } from "@react-google-maps/api";
 import { socket } from "@/socket";
 import { Button } from "./ui/button";
@@ -11,8 +11,8 @@ export default function Map() {
   const [inControl, setInControl] = React.useState(false);
   const [isControlled, setIsControlled] = React.useState(false);
   const [mapState, setMapState] = React.useState({
-    center: { lat: 0, lng: 0 },
-    zoom: 3,
+    center: { lat: 59.64372637586483, lng: 17.08156655575136 },
+    zoom: 17,
   });
 
   const { isLoaded, loadError } = useJsApiLoader({
@@ -59,6 +59,24 @@ export default function Map() {
     };
   }, []);
 
+  const panoOptions: google.maps.StreetViewPanoramaOptions = useMemo(
+    () => ({
+      disableDefaultUI: true,
+      panControl: true,
+      zoomControl: true,
+      addressControl: true,
+      clickToGo: inControl,
+      linksControl: inControl,
+    }),
+    [inControl]
+  );
+
+  useEffect(() => {
+    if (panoRef.current) {
+      panoRef.current.setOptions(panoOptions);
+    }
+  }, [inControl, panoOptions]);
+
   const onLoad = React.useCallback(
     (map: google.maps.Map) => {
       mapRef.current = map;
@@ -66,6 +84,7 @@ export default function Map() {
       mapRef.current.setZoom(mapState.zoom);
 
       panoRef.current = map.getStreetView();
+      panoRef.current.setOptions(panoOptions);
 
       if (panoRef.current) {
         console.log("StreetViewPanorama initialized");
@@ -87,7 +106,7 @@ export default function Map() {
         console.error("Failed to initialize StreetViewPanorama");
       }
     },
-    [mapState]
+    [mapState.center, mapState.zoom, panoOptions]
   );
 
   const onUnmount = React.useCallback(() => {
@@ -145,6 +164,7 @@ export default function Map() {
           gestureHandling: inControl ? "auto" : "none",
           streetViewControl: inControl,
           zoomControl: inControl,
+          keyboardShortcuts: false,
         }}
       >
         <Button
