@@ -45,10 +45,9 @@ io.on("connection", (socket) => {
     }
   });
 
-  socket.on("panoramaVisible", (position) => {
+  socket.on("panoramaVisible", (panoId) => {
     if (currentController === socket.id) {
-      console.log(position);
-      socket.broadcast.emit("panoramaVisible", position);
+      socket.broadcast.emit("panoramaVisible", panoId);
     }
   });
 

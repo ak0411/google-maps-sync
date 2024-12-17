@@ -33,9 +33,9 @@ export default function Map() {
       setInControl(status.controllerId === socket.id);
     }
 
-    function onPanoramaVisible(position: google.maps.LatLngLiteral) {
+    function onPanoramaVisible(panoId: string) {
       if (panoRef.current) {
-        panoRef.current.setPosition(position);
+        panoRef.current.setPano(panoId);
         panoRef.current.setVisible(true);
       }
     }
@@ -74,12 +74,9 @@ export default function Map() {
         panoRef.current.addListener("visible_changed", () => {
           console.log("visible_changed event triggered");
           if (panoRef.current?.getVisible()) {
-            const position = panoRef.current.getPosition();
-            console.log("Panorama is visible at position:", position);
-            socket.emit("panoramaVisible", {
-              lat: position?.lat(),
-              lng: position?.lng(),
-            });
+            const panoId = panoRef.current.getPano();
+            console.log("Panorama is visible with pano id:", panoId);
+            socket.emit("panoramaVisible", panoId);
           } else {
             console.log("hide panorama");
             // Emit an event when the panorama becomes invisible
