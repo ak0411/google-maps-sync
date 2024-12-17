@@ -7,7 +7,9 @@ import { Button } from "./ui/button";
 
 export default function Map() {
   const mapRef = React.useRef<google.maps.Map>(null);
+  const panoRef = React.useRef<google.maps.StreetViewPanorama>(null);
   const [inControl, setInControl] = React.useState(false);
+  const [isControlled, setIsControlled] = React.useState(false);
   const [mapState, setMapState] = React.useState({
     center: { lat: 0, lng: 0 },
     zoom: 3,
@@ -23,16 +25,37 @@ export default function Map() {
       mapRef.current?.fitBounds(bounds);
     }
 
-    function onControl(control: boolean) {
-      setInControl(control);
+    function onControlStatus(status: {
+      isControlled: boolean;
+      controllerId: string | null;
+    }) {
+      setIsControlled(status.isControlled);
+      setInControl(status.controllerId === socket.id);
+    }
+
+    function onPanoramaVisible(position: google.maps.LatLngLiteral) {
+      if (panoRef.current) {
+        panoRef.current.setPosition(position);
+        panoRef.current.setVisible(true);
+      }
+    }
+
+    function onPanoramaHidden() {
+      if (panoRef.current) {
+        panoRef.current.setVisible(false);
+      }
     }
 
     socket.on("move", onMove);
-    socket.on("control", onControl);
+    socket.on("controlStatus", onControlStatus);
+    socket.on("panoramaVisible", onPanoramaVisible);
+    socket.on("panoramaHidden", onPanoramaHidden);
 
     return () => {
       socket.off("move", onMove);
-      socket.off("control", onControl);
+      socket.off("controlStatus", onControlStatus);
+      socket.off("panoramaVisible", onPanoramaVisible);
+      socket.on("panoramaHidden", onPanoramaHidden);
     };
   }, []);
 
@@ -41,6 +64,31 @@ export default function Map() {
       mapRef.current = map;
       mapRef.current.setCenter(mapState.center);
       mapRef.current.setZoom(mapState.zoom);
+
+      panoRef.current = map.getStreetView();
+
+      if (panoRef.current) {
+        console.log("StreetViewPanorama initialized");
+
+        // Add event listener for visible_changed
+        panoRef.current.addListener("visible_changed", () => {
+          console.log("visible_changed event triggered");
+          if (panoRef.current?.getVisible()) {
+            const position = panoRef.current.getPosition();
+            console.log("Panorama is visible at position:", position);
+            socket.emit("panoramaVisible", {
+              lat: position?.lat(),
+              lng: position?.lng(),
+            });
+          } else {
+            console.log("hide panorama");
+            // Emit an event when the panorama becomes invisible
+            socket.emit("panoramaHidden");
+          }
+        });
+      } else {
+        console.error("Failed to initialize StreetViewPanorama");
+      }
     },
     [mapState]
   );
@@ -53,7 +101,7 @@ export default function Map() {
     if (inControl) {
       const center = mapRef.current?.getCenter();
       const zoom = mapRef.current?.getZoom();
-      if (center && zoom !== undefined) {
+      if (center && zoom) {
         setMapState({
           center: { lat: center.lat(), lng: center.lng() },
           zoom,
@@ -104,9 +152,11 @@ export default function Map() {
       >
         <Button
           className="absolute z-10 bottom-4 left-1/2 -translate-x-1/2"
+          variant={inControl ? "destructive" : "default"}
           onClick={handleControl}
+          disabled={isControlled && !inControl}
         >
-          {inControl ? "Relinquish Control" : "Take Control"}
+          {inControl ? "Give Control" : "Take Control"}
         </Button>
       </GoogleMap>
     );
@@ -114,6 +164,7 @@ export default function Map() {
     handleControl,
     handleMove,
     inControl,
+    isControlled,
     isLoaded,
     loadError,
     onLoad,

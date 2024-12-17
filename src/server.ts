@@ -13,21 +13,28 @@ const io = new Server(httpServer, {
 let currentController: string | null = null;
 
 io.on("connection", (socket) => {
-  // Notify the client of the current control status
-  socket.emit("control", currentController === socket.id);
+  socket.emit("controlStatus", {
+    isControlled: !!currentController,
+    controllerId: currentController,
+  });
 
   socket.on("takeControl", () => {
     if (!currentController) {
       currentController = socket.id;
-      socket.emit("control", true);
-      socket.broadcast.emit("control", false);
+      io.emit("controlStatus", {
+        isControlled: true,
+        controllerId: currentController,
+      });
     }
   });
 
   socket.on("giveControl", () => {
     if (currentController === socket.id) {
       currentController = null;
-      socket.emit("control", false);
+      io.emit("controlStatus", {
+        isControlled: false,
+        controllerId: null,
+      });
     }
   });
 
@@ -38,10 +45,26 @@ io.on("connection", (socket) => {
     }
   });
 
+  socket.on("panoramaVisible", (position) => {
+    if (currentController === socket.id) {
+      console.log(position);
+      socket.broadcast.emit("panoramaVisible", position);
+    }
+  });
+
+  socket.on("panoramaHidden", () => {
+    if (currentController === socket.id) {
+      socket.broadcast.emit("panoramaHidden");
+    }
+  });
+
   socket.on("disconnect", () => {
     if (currentController === socket.id) {
       currentController = null;
-      socket.broadcast.emit("control", false);
+      socket.broadcast.emit("controlStatus", {
+        isControlled: false,
+        controllerId: null,
+      });
     }
   });
 });
