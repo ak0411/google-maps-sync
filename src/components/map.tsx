@@ -2,9 +2,9 @@
 
 import React, { useEffect, useMemo } from "react";
 import { useJsApiLoader, GoogleMap } from "@react-google-maps/api";
-import { socket } from "@/socket";
 import { Button } from "./ui/button";
 import { Users } from "lucide-react";
+import { socket } from "@/socket";
 
 type MapState = {
   center: google.maps.LatLngLiteral;
@@ -33,7 +33,7 @@ export default function Map() {
   });
 
   useEffect(() => {
-    console.log("Map component mounted");
+    socket.connect();
 
     function updateMap(bounds: google.maps.LatLngBounds) {
       mapRef.current?.fitBounds(bounds);
