@@ -40,20 +40,27 @@ io.on("connection", (socket) => {
 
   socket.on("move", (bounds) => {
     if (currentController === socket.id) {
-      console.log(bounds);
+      // console.log(bounds);
       socket.broadcast.emit("move", bounds);
     }
   });
 
-  socket.on("panoramaVisible", (panoId) => {
+  socket.on("panoramaVisible", () => {
     if (currentController === socket.id) {
-      socket.broadcast.emit("panoramaVisible", panoId);
+      /* socket.broadcast.emit("panoramaVisible", panoId); */
+      socket.broadcast.emit("panoramaVisible");
     }
   });
 
   socket.on("panoramaHidden", () => {
     if (currentController === socket.id) {
       socket.broadcast.emit("panoramaHidden");
+    }
+  });
+
+  socket.on("updatePano", (panoId) => {
+    if (currentController === socket.id) {
+      socket.broadcast.emit("updatePano", panoId);
     }
   });
 
@@ -64,6 +71,7 @@ io.on("connection", (socket) => {
         isControlled: false,
         controllerId: null,
       });
+      socket.broadcast.emit("panoramaHidden");
     }
   });
 });

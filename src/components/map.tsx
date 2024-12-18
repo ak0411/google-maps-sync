@@ -5,12 +5,22 @@ import { useJsApiLoader, GoogleMap } from "@react-google-maps/api";
 import { socket } from "@/socket";
 import { Button } from "./ui/button";
 
+type MapState = {
+  center: google.maps.LatLngLiteral;
+  zoom: number;
+};
+
+type ControlStatus = {
+  isControlled: boolean;
+  controllerId: string | null;
+};
+
 export default function Map() {
   const mapRef = React.useRef<google.maps.Map>(null);
   const panoRef = React.useRef<google.maps.StreetViewPanorama>(null);
   const [inControl, setInControl] = React.useState(false);
   const [isControlled, setIsControlled] = React.useState(false);
-  const [mapState, setMapState] = React.useState({
+  const [mapState, setMapState] = React.useState<MapState>({
     center: { lat: 59.64372637586483, lng: 17.08156655575136 },
     zoom: 17,
   });
@@ -25,17 +35,13 @@ export default function Map() {
       mapRef.current?.fitBounds(bounds);
     }
 
-    function onControlStatus(status: {
-      isControlled: boolean;
-      controllerId: string | null;
-    }) {
+    function onControlStatus(status: ControlStatus) {
       setIsControlled(status.isControlled);
       setInControl(status.controllerId === socket.id);
     }
 
-    function onPanoramaVisible(panoId: string) {
+    function onPanoramaVisible() {
       if (panoRef.current) {
-        panoRef.current.setPano(panoId);
         panoRef.current.setVisible(true);
       }
     }
@@ -46,16 +52,24 @@ export default function Map() {
       }
     }
 
+    function onUpdatePano(panoId: string) {
+      if (panoRef.current) {
+        panoRef.current.setPano(panoId);
+      }
+    }
+
     socket.on("move", onMove);
     socket.on("controlStatus", onControlStatus);
     socket.on("panoramaVisible", onPanoramaVisible);
     socket.on("panoramaHidden", onPanoramaHidden);
+    socket.on("updatePano", onUpdatePano);
 
     return () => {
       socket.off("move", onMove);
       socket.off("controlStatus", onControlStatus);
       socket.off("panoramaVisible", onPanoramaVisible);
       socket.on("panoramaHidden", onPanoramaHidden);
+      socket.on("updatePano", onUpdatePano);
     };
   }, []);
 
@@ -87,23 +101,20 @@ export default function Map() {
       panoRef.current.setOptions(panoOptions);
 
       if (panoRef.current) {
-        console.log("StreetViewPanorama initialized");
-
-        // Add event listener for visible_changed
         panoRef.current.addListener("visible_changed", () => {
-          console.log("visible_changed event triggered");
           if (panoRef.current?.getVisible()) {
-            const panoId = panoRef.current.getPano();
-            console.log("Panorama is visible with pano id:", panoId);
-            socket.emit("panoramaVisible", panoId);
+            socket.emit("panoramaVisible");
           } else {
-            console.log("hide panorama");
-            // Emit an event when the panorama becomes invisible
             socket.emit("panoramaHidden");
           }
         });
-      } else {
-        console.error("Failed to initialize StreetViewPanorama");
+
+        panoRef.current.addListener("pano_changed", () => {
+          const panoId = panoRef.current?.getPano();
+          if (panoId) {
+            socket.emit("updatePano", panoId);
+          }
+        });
       }
     },
     [mapState.center, mapState.zoom, panoOptions]
