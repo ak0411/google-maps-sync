@@ -4,6 +4,7 @@ import React, { useEffect, useMemo } from "react";
 import { useJsApiLoader, GoogleMap } from "@react-google-maps/api";
 import { socket } from "@/socket";
 import { Button } from "./ui/button";
+import { Users } from "lucide-react";
 
 type MapState = {
   center: google.maps.LatLngLiteral;
@@ -24,6 +25,7 @@ export default function Map() {
     center: { lat: 59.64372637586483, lng: 17.08156655575136 },
     zoom: 17,
   });
+  const [onlineClients, setOnlineClients] = React.useState(0);
 
   const { isLoaded, loadError } = useJsApiLoader({
     id: "google-map-script",
@@ -31,6 +33,8 @@ export default function Map() {
   });
 
   useEffect(() => {
+    console.log("Map component mounted");
+
     function updateMap(bounds: google.maps.LatLngBounds) {
       mapRef.current?.fitBounds(bounds);
     }
@@ -58,18 +62,24 @@ export default function Map() {
       }
     }
 
+    function onOnlineClients(onlineClients: number) {
+      setOnlineClients(onlineClients);
+    }
+
     socket.on("updateMap", updateMap);
     socket.on("controlStatus", onControlStatus);
     socket.on("panoramaVisible", onPanoramaVisible);
     socket.on("panoramaHidden", onPanoramaHidden);
     socket.on("updatePano", onUpdatePano);
+    socket.on("onlineClients", onOnlineClients);
 
     return () => {
       socket.off("updateMap", updateMap);
       socket.off("controlStatus", onControlStatus);
       socket.off("panoramaVisible", onPanoramaVisible);
-      socket.on("panoramaHidden", onPanoramaHidden);
-      socket.on("updatePano", onUpdatePano);
+      socket.off("panoramaHidden", onPanoramaHidden);
+      socket.off("updatePano", onUpdatePano);
+      socket.off("onlineClients", onOnlineClients);
     };
   }, []);
 
@@ -192,13 +202,21 @@ export default function Map() {
         }}
       >
         <Button
-          className="absolute z-10 bottom-4 left-1/2 -translate-x-1/2"
-          variant={inControl ? "destructive" : "default"}
+          className="absolute bottom-4 left-1/2 -translate-x-1/2 text-lg shadow-lg"
+          variant={inControl ? "destructive" : "outline"}
           onClick={handleControl}
           disabled={isControlled && !inControl}
         >
           {inControl ? "Give Control" : "Take Control"}
         </Button>
+        <div className="absolute right-4 top-4 shadow-md flex">
+          <Button variant="secondary" className="h-[40px] text-lg">
+            {onlineClients}
+          </Button>
+          <Button variant="outline" className="h-[40px]">
+            <Users />
+          </Button>
+        </div>
       </GoogleMap>
     );
   }, [
@@ -212,5 +230,6 @@ export default function Map() {
     mapState.zoom,
     onLoad,
     onUnmount,
+    onlineClients,
   ]);
 }

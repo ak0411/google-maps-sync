@@ -11,8 +11,13 @@ const io = new Server(httpServer, {
 });
 
 let currentController: string | null = null;
+const clients = new Set();
 
 io.on("connection", (socket) => {
+  console.log(`Client connected: ${socket.id}`);
+  clients.add(socket.id);
+  io.emit("onlineClients", clients.size);
+
   socket.emit("controlStatus", {
     isControlled: !!currentController,
     controllerId: currentController,
@@ -64,6 +69,10 @@ io.on("connection", (socket) => {
   });
 
   socket.on("disconnect", () => {
+    console.log(`Client disconnected: ${socket.id}`);
+    clients.delete(socket.id);
+    io.emit("onlineClients", clients.size);
+
     if (currentController === socket.id) {
       currentController = null;
       socket.broadcast.emit("controlStatus", {
