@@ -202,14 +202,14 @@ export default function Map() {
         }}
       >
         <Button
-          className="absolute bottom-4 left-1/2 -translate-x-1/2 text-lg shadow-lg"
+          className="absolute bottom-4 left-1/2 -translate-x-1/2 text-lg shadow-lg z-10"
           variant={inControl ? "destructive" : "outline"}
           onClick={handleControl}
           disabled={isControlled && !inControl}
         >
           {inControl ? "Give Control" : "Take Control"}
         </Button>
-        <div className="absolute right-4 top-4 shadow-md flex">
+        <div className="absolute right-4 top-4 shadow-md flex z-10">
           <Button variant="secondary" className="h-[40px] text-lg">
             {onlineClients}
           </Button>
