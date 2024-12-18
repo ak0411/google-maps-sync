@@ -40,14 +40,12 @@ io.on("connection", (socket) => {
 
   socket.on("move", (bounds) => {
     if (currentController === socket.id) {
-      // console.log(bounds);
       socket.broadcast.emit("move", bounds);
     }
   });
 
   socket.on("panoramaVisible", () => {
     if (currentController === socket.id) {
-      /* socket.broadcast.emit("panoramaVisible", panoId); */
       socket.broadcast.emit("panoramaVisible");
     }
   });
@@ -60,6 +58,7 @@ io.on("connection", (socket) => {
 
   socket.on("updatePano", (panoId) => {
     if (currentController === socket.id) {
+      socket.broadcast.emit("panoramaVisible");
       socket.broadcast.emit("updatePano", panoId);
     }
   });

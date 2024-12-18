@@ -81,6 +81,7 @@ export default function Map() {
       addressControl: true,
       clickToGo: inControl,
       linksControl: inControl,
+      enableCloseButton: inControl,
     }),
     [inControl]
   );
@@ -94,9 +95,6 @@ export default function Map() {
   const onLoad = React.useCallback(
     (map: google.maps.Map) => {
       mapRef.current = map;
-      mapRef.current.setCenter(mapState.center);
-      mapRef.current.setZoom(mapState.zoom);
-
       panoRef.current = map.getStreetView();
       panoRef.current.setOptions(panoOptions);
 
@@ -115,9 +113,22 @@ export default function Map() {
             socket.emit("updatePano", panoId);
           }
         });
+
+        panoRef.current.addListener("position_changed", () => {
+          const position = panoRef.current?.getPosition();
+          if (position) {
+            setMapState((prev) => ({
+              ...prev,
+              center: {
+                lat: position.lat(),
+                lng: position.lng(),
+              },
+            }));
+          }
+        });
       }
     },
-    [mapState.center, mapState.zoom, panoOptions]
+    [panoOptions]
   );
 
   const onUnmount = React.useCallback(() => {
@@ -152,6 +163,8 @@ export default function Map() {
 
     return (
       <GoogleMap
+        center={mapState.center}
+        zoom={mapState.zoom}
         onLoad={onLoad}
         onUnmount={onUnmount}
         onDragEnd={handleMove}
@@ -195,6 +208,8 @@ export default function Map() {
     isControlled,
     isLoaded,
     loadError,
+    mapState.center,
+    mapState.zoom,
     onLoad,
     onUnmount,
   ]);
