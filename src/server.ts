@@ -38,9 +38,9 @@ io.on("connection", (socket) => {
     }
   });
 
-  socket.on("move", (bounds) => {
+  socket.on("updateMap", (bounds) => {
     if (currentController === socket.id) {
-      socket.broadcast.emit("move", bounds);
+      socket.broadcast.emit("updateMap", bounds);
     }
   });
 

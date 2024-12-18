@@ -31,7 +31,7 @@ export default function Map() {
   });
 
   useEffect(() => {
-    function onMove(bounds: google.maps.LatLngBounds) {
+    function updateMap(bounds: google.maps.LatLngBounds) {
       mapRef.current?.fitBounds(bounds);
     }
 
@@ -58,14 +58,14 @@ export default function Map() {
       }
     }
 
-    socket.on("move", onMove);
+    socket.on("updateMap", updateMap);
     socket.on("controlStatus", onControlStatus);
     socket.on("panoramaVisible", onPanoramaVisible);
     socket.on("panoramaHidden", onPanoramaHidden);
     socket.on("updatePano", onUpdatePano);
 
     return () => {
-      socket.off("move", onMove);
+      socket.off("updateMap", updateMap);
       socket.off("controlStatus", onControlStatus);
       socket.off("panoramaVisible", onPanoramaVisible);
       socket.on("panoramaHidden", onPanoramaHidden);
@@ -135,7 +135,7 @@ export default function Map() {
     mapRef.current = null;
   }, []);
 
-  const handleMove = React.useCallback(() => {
+  const handleUpdateMap = React.useCallback(() => {
     if (inControl) {
       const center = mapRef.current?.getCenter();
       const zoom = mapRef.current?.getZoom();
@@ -144,7 +144,7 @@ export default function Map() {
           center: { lat: center.lat(), lng: center.lng() },
           zoom,
         });
-        socket.emit("move", mapRef.current?.getBounds());
+        socket.emit("updateMap", mapRef.current?.getBounds());
       }
     }
   }, [inControl]);
@@ -167,8 +167,8 @@ export default function Map() {
         zoom={mapState.zoom}
         onLoad={onLoad}
         onUnmount={onUnmount}
-        onDragEnd={handleMove}
-        onZoomChanged={handleMove}
+        onDragEnd={handleUpdateMap}
+        onZoomChanged={handleUpdateMap}
         mapContainerStyle={{
           height: "100vh",
           width: "100%",
@@ -203,7 +203,7 @@ export default function Map() {
     );
   }, [
     handleControl,
-    handleMove,
+    handleUpdateMap,
     inControl,
     isControlled,
     isLoaded,
