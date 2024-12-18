@@ -26,6 +26,7 @@ export default function Map() {
     zoom: 17,
   });
   const [onlineClients, setOnlineClients] = React.useState(0);
+  const [inPano, setInPano] = React.useState(false);
 
   const { isLoaded, loadError } = useJsApiLoader({
     id: "google-map-script",
@@ -47,12 +48,14 @@ export default function Map() {
     function onPanoramaVisible() {
       if (panoRef.current) {
         panoRef.current.setVisible(true);
+        setInPano(true);
       }
     }
 
     function onPanoramaHidden() {
       if (panoRef.current) {
         panoRef.current.setVisible(false);
+        setInPano(false);
       }
     }
 
@@ -112,8 +115,10 @@ export default function Map() {
         panoRef.current.addListener("visible_changed", () => {
           if (panoRef.current?.getVisible()) {
             socket.emit("panoramaVisible");
+            setInPano(true);
           } else {
             socket.emit("panoramaHidden");
+            setInPano(false);
           }
         });
 
@@ -202,7 +207,9 @@ export default function Map() {
         }}
       >
         <Button
-          className="absolute bottom-4 left-1/2 -translate-x-1/2 text-lg shadow-lg z-10"
+          className={`absolute bottom-4 left-1/2 -translate-x-1/2 text-lg font-normal z-10 ${
+            inPano && "dark text-white"
+          }`}
           variant={inControl ? "destructive" : "outline"}
           onClick={handleControl}
           disabled={isControlled && !inControl}
@@ -210,10 +217,16 @@ export default function Map() {
           {inControl ? "Give Control" : "Take Control"}
         </Button>
         <div className="absolute right-4 top-4 shadow-md flex z-10">
-          <Button variant="secondary" className="h-[40px] text-lg">
+          <Button
+            variant="secondary"
+            className={`h-[40px] text-lg ${inPano && "dark opacity-85"}`}
+          >
             {onlineClients}
           </Button>
-          <Button variant="outline" className="h-[40px]">
+          <Button
+            variant="outline"
+            className={`h-[40px] ${inPano && "dark text-white opacity-85"}`}
+          >
             <Users />
           </Button>
         </div>
@@ -223,6 +236,7 @@ export default function Map() {
     handleControl,
     handleUpdateMap,
     inControl,
+    inPano,
     isControlled,
     isLoaded,
     loadError,

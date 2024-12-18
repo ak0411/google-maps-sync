@@ -3,11 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "nodemon server.ts",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
-    "server": "nodemon src/server.ts"
+    "lint": "next lint"
   },
   "dependencies": {
     "@radix-ui/react-separator": "^1.1.1",
