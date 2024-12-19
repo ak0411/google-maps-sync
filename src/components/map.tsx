@@ -3,11 +3,12 @@
 import React from "react";
 import { useJsApiLoader, GoogleMap, Libraries } from "@react-google-maps/api";
 import { Button } from "./ui/button";
-import { Users } from "lucide-react";
+import { Lock, Unlock, Users } from "lucide-react";
 import { socket } from "@/socket";
 import GooglePlacesAutocomplete, {
   geocodeByPlaceId,
 } from "react-google-places-autocomplete";
+import { Toggle } from "./ui/toggle";
 
 type MapState = {
   center: google.maps.LatLngLiteral;
@@ -34,12 +35,17 @@ export default function Map() {
   });
   const [onlineClients, setOnlineClients] = React.useState(0);
   const [inPano, setInPano] = React.useState(false);
+  const [isFollowPov, setIsFollowPov] = React.useState(false);
 
   const { isLoaded, loadError } = useJsApiLoader({
     id: "google-map-script",
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY as string,
     libraries,
   });
+
+  React.useEffect(() => {
+    console.log(isFollowPov);
+  }, [isFollowPov]);
 
   React.useEffect(() => {
     socket.connect();
@@ -81,6 +87,12 @@ export default function Map() {
       placeMarker(location);
     }
 
+    function onUpdatePov(pov: google.maps.StreetViewPov) {
+      if (panoRef.current) {
+        panoRef.current.setPov(pov);
+      }
+    }
+
     socket.on("updateMap", updateMap);
     socket.on("controlStatus", onControlStatus);
     socket.on("panoramaVisible", onPanoramaVisible);
@@ -88,6 +100,7 @@ export default function Map() {
     socket.on("updatePano", onUpdatePano);
     socket.on("onlineClients", onOnlineClients);
     socket.on("marker", onMarker);
+    socket.on("updatePov", onUpdatePov);
 
     return () => {
       socket.off("updateMap", updateMap);
@@ -97,6 +110,7 @@ export default function Map() {
       socket.off("updatePano", onUpdatePano);
       socket.off("onlineClients", onOnlineClients);
       socket.off("marker", onMarker);
+      socket.off("updatePov", onUpdatePov);
     };
   }, []);
 
@@ -159,6 +173,30 @@ export default function Map() {
     },
     [panoOptions]
   );
+
+  React.useEffect(() => {
+    if (panoRef.current && isFollowPov) {
+      const handlePovChanged = () => {
+        const heading = panoRef.current?.getPov().heading;
+        const pitch = panoRef.current?.getPov().pitch;
+        if (heading && pitch) {
+          const pov: google.maps.StreetViewPov = { heading, pitch };
+          socket.emit("updatePov", pov);
+        }
+      };
+
+      const povChangedListener = panoRef.current.addListener(
+        "pov_changed",
+        handlePovChanged
+      );
+
+      return () => {
+        if (povChangedListener) {
+          google.maps.event.removeListener(povChangedListener);
+        }
+      };
+    }
+  }, [isFollowPov]);
 
   const onUnmount = React.useCallback(() => {
     mapRef.current = null;
@@ -261,8 +299,18 @@ export default function Map() {
             />
           </div>
         )}
+        {inControl && inPano && (
+          <Toggle
+            className="absolute bottom-[24px] right-[60px] z-10 size-[40px] dark bg-[#444444] shadow-lg text-gray-300"
+            pressed={isFollowPov}
+            onPressedChange={setIsFollowPov}
+            size="lg"
+          >
+            {isFollowPov ? <Lock /> : <Unlock />}
+          </Toggle>
+        )}
         <Button
-          className={`absolute bottom-[20px] left-1/2 -translate-x-1/2 text-lg font-normal z-10 ${
+          className={`absolute bottom-[24px] h-[40px] left-1/2 -translate-x-1/2 text-lg font-normal z-10 ${
             inPano && "dark text-white"
           }`}
           variant={inControl ? "destructive" : "outline"}
@@ -294,6 +342,7 @@ export default function Map() {
     inPano,
     isControlled,
     isLoaded,
+    isFollowPov,
     loadError,
     mapState.center,
     mapState.zoom,

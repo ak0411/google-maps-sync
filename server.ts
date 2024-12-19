@@ -17,6 +17,8 @@ app.prepare().then(() => {
   const clients = new Set();
 
   io.on("connection", (socket) => {
+    console.log(`Client connected: ${socket.id}`);
+
     clients.add(socket.id);
     io.emit("onlineClients", clients.size);
 
@@ -67,6 +69,12 @@ app.prepare().then(() => {
       if (currentController === socket.id) {
         socket.broadcast.emit("panoramaVisible");
         socket.broadcast.emit("updatePano", panoId);
+      }
+    });
+
+    socket.on("updatePov", (pov) => {
+      if (currentController === socket.id) {
+        socket.broadcast.emit("updatePov", pov);
       }
     });
 
