@@ -70,6 +70,12 @@ app.prepare().then(() => {
       }
     });
 
+    socket.on("marker", (location) => {
+      if (currentController === socket.id) {
+        socket.broadcast.emit("marker", location);
+      }
+    });
+
     socket.on("disconnect", () => {
       console.log(`Client disconnected: ${socket.id}`);
       clients.delete(socket.id);

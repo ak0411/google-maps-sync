@@ -8,6 +8,7 @@ import { socket } from "@/socket";
 import GooglePlacesAutocomplete, {
   geocodeByPlaceId,
 } from "react-google-places-autocomplete";
+
 type MapState = {
   center: google.maps.LatLngLiteral;
   zoom: number;
@@ -18,11 +19,13 @@ type ControlStatus = {
   controllerId: string | null;
 };
 
-const libraries: Libraries = ["places"];
+const libraries: Libraries = ["places", "marker"];
 
 export default function Map() {
   const mapRef = React.useRef<google.maps.Map>(null);
   const panoRef = React.useRef<google.maps.StreetViewPanorama>(null);
+  const markerRef =
+    React.useRef<google.maps.marker.AdvancedMarkerElement>(null);
   const [inControl, setInControl] = React.useState(false);
   const [isControlled, setIsControlled] = React.useState(false);
   const [mapState, setMapState] = React.useState<MapState>({
@@ -74,12 +77,17 @@ export default function Map() {
       setOnlineClients(onlineClients);
     }
 
+    function onMarker(location: google.maps.LatLng) {
+      placeMarker(location);
+    }
+
     socket.on("updateMap", updateMap);
     socket.on("controlStatus", onControlStatus);
     socket.on("panoramaVisible", onPanoramaVisible);
     socket.on("panoramaHidden", onPanoramaHidden);
     socket.on("updatePano", onUpdatePano);
     socket.on("onlineClients", onOnlineClients);
+    socket.on("marker", onMarker);
 
     return () => {
       socket.off("updateMap", updateMap);
@@ -88,6 +96,7 @@ export default function Map() {
       socket.off("panoramaHidden", onPanoramaHidden);
       socket.off("updatePano", onUpdatePano);
       socket.off("onlineClients", onOnlineClients);
+      socket.off("marker", onMarker);
     };
   }, []);
 
@@ -178,6 +187,16 @@ export default function Map() {
     }
   }, [inControl]);
 
+  const placeMarker = (position: google.maps.LatLng) => {
+    if (markerRef.current) {
+      markerRef.current.map = null;
+    }
+    markerRef.current = new google.maps.marker.AdvancedMarkerElement({
+      map: mapRef.current,
+      position,
+    });
+  };
+
   return React.useMemo(() => {
     if (loadError) return <div>Error loading maps</div>;
     if (!isLoaded) return <div>Loading...</div>;
@@ -195,6 +214,7 @@ export default function Map() {
           width: "100%",
         }}
         options={{
+          mapId: "4cc7186171a056a2",
           minZoom: 2,
           fullscreenControl: false,
           restriction: {
@@ -222,12 +242,16 @@ export default function Map() {
                       const results = await geocodeByPlaceId(
                         newValue.value.place_id
                       );
-                      if (results[0].geometry.bounds) {
-                        mapRef.current.fitBounds(results[0].geometry.bounds);
+                      const geometry = results[0].geometry;
+
+                      if (geometry.bounds) {
+                        mapRef.current.fitBounds(geometry.bounds);
                       } else {
-                        mapRef.current.setCenter(results[0].geometry.location);
+                        mapRef.current.setCenter(geometry.location);
                         mapRef.current.setZoom(17);
                       }
+                      placeMarker(geometry.location);
+                      socket.emit("marker", geometry.location);
                     } catch (error) {
                       console.error("Error getting location: ", error);
                     }
