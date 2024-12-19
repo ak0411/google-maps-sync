@@ -1,11 +1,13 @@
 "use client";
 
 import React, { useEffect, useMemo } from "react";
-import { useJsApiLoader, GoogleMap } from "@react-google-maps/api";
+import { useJsApiLoader, GoogleMap, Libraries } from "@react-google-maps/api";
 import { Button } from "./ui/button";
 import { Users } from "lucide-react";
 import { socket } from "@/socket";
-
+import GooglePlacesAutocomplete, {
+  geocodeByPlaceId,
+} from "react-google-places-autocomplete";
 type MapState = {
   center: google.maps.LatLngLiteral;
   zoom: number;
@@ -15,6 +17,8 @@ type ControlStatus = {
   isControlled: boolean;
   controllerId: string | null;
 };
+
+const libraries: Libraries = ["places"];
 
 export default function Map() {
   const mapRef = React.useRef<google.maps.Map>(null);
@@ -31,6 +35,7 @@ export default function Map() {
   const { isLoaded, loadError } = useJsApiLoader({
     id: "google-map-script",
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY as string,
+    libraries,
   });
 
   useEffect(() => {
@@ -206,6 +211,32 @@ export default function Map() {
           keyboardShortcuts: false,
         }}
       >
+        {inControl && !inPano && (
+          <div className="absolute top-[100px] lg:top-[10px] h-[40px] left-1/2 -translate-x-1/2 w-11/12 sm:w-[500px]">
+            <GooglePlacesAutocomplete
+              selectProps={{
+                onChange: async (newValue) => {
+                  if (newValue && newValue.value && mapRef.current) {
+                    try {
+                      const results = await geocodeByPlaceId(
+                        newValue.value.place_id
+                      );
+                      console.log(results);
+                      if (results[0].geometry.bounds) {
+                        mapRef.current.fitBounds(results[0].geometry.bounds);
+                      } else {
+                        mapRef.current.setCenter(results[0].geometry.location);
+                        mapRef.current.setZoom(17);
+                      }
+                    } catch (error) {
+                      console.error("Error getting location: ", error);
+                    }
+                  }
+                },
+              }}
+            />
+          </div>
+        )}
         <Button
           className={`absolute bottom-[20px] left-1/2 -translate-x-1/2 text-lg font-normal z-10 ${
             inPano && "dark text-white"
