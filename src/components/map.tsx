@@ -207,7 +207,7 @@ export default function Map() {
         }}
       >
         <Button
-          className={`absolute bottom-4 left-1/2 -translate-x-1/2 text-lg font-normal z-10 ${
+          className={`absolute bottom-[20px] left-1/2 -translate-x-1/2 text-lg font-normal z-10 ${
             inPano && "dark text-white"
           }`}
           variant={inControl ? "destructive" : "outline"}
@@ -216,7 +216,7 @@ export default function Map() {
         >
           {inControl ? "Give Control" : "Take Control"}
         </Button>
-        <div className="absolute right-4 top-4 shadow-md flex z-10">
+        <div className="absolute right-[10px] top-[10px] shadow-md flex z-10">
           <Button
             variant="secondary"
             className={`h-[40px] text-lg ${inPano && "dark opacity-85"}`}
