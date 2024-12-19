@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo } from "react";
+import React from "react";
 import { useJsApiLoader, GoogleMap, Libraries } from "@react-google-maps/api";
 import { Button } from "./ui/button";
 import { Users } from "lucide-react";
@@ -38,7 +38,7 @@ export default function Map() {
     libraries,
   });
 
-  useEffect(() => {
+  React.useEffect(() => {
     socket.connect();
 
     function updateMap(bounds: google.maps.LatLngBounds) {
@@ -91,7 +91,7 @@ export default function Map() {
     };
   }, []);
 
-  const panoOptions: google.maps.StreetViewPanoramaOptions = useMemo(
+  const panoOptions: google.maps.StreetViewPanoramaOptions = React.useMemo(
     () => ({
       disableDefaultUI: true,
       panControl: true,
@@ -104,7 +104,7 @@ export default function Map() {
     [inControl]
   );
 
-  useEffect(() => {
+  React.useEffect(() => {
     if (panoRef.current) {
       panoRef.current.setOptions(panoOptions);
     }
@@ -153,6 +153,7 @@ export default function Map() {
 
   const onUnmount = React.useCallback(() => {
     mapRef.current = null;
+    panoRef.current = null;
   }, []);
 
   const handleUpdateMap = React.useCallback(() => {
@@ -221,7 +222,6 @@ export default function Map() {
                       const results = await geocodeByPlaceId(
                         newValue.value.place_id
                       );
-                      console.log(results);
                       if (results[0].geometry.bounds) {
                         mapRef.current.fitBounds(results[0].geometry.bounds);
                       } else {
