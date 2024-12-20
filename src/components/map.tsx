@@ -3,12 +3,11 @@
 import React from "react";
 import { useJsApiLoader, GoogleMap } from "@react-google-maps/api";
 import { Button } from "./ui/button";
-import { Lock, Unlock, Users } from "lucide-react";
+import { Users } from "lucide-react";
 import { socket } from "@/socket";
 import GooglePlacesAutocomplete, {
   geocodeByPlaceId,
 } from "react-google-places-autocomplete";
-import { Toggle } from "./ui/toggle";
 import {
   type ControlStatus,
   DEFAULT_CENTER,
@@ -18,6 +17,7 @@ import {
   type MapState,
   libraries,
 } from "@/lib/types";
+import PovToggle from "./pov-toggle";
 
 export type MapProps = {
   initialCenter?: google.maps.LatLngLiteral;
@@ -295,15 +295,11 @@ export default function Map({
           </div>
         )}
         {inControl && inPano && (
-          <div className="absolute bottom-[24px] right-[60px] z-10 flex dark shadow-lg bg-[#444444] text-gray-300">
-            <Toggle
-              className="size-[40px]"
-              pressed={isFollowPov}
-              onPressedChange={setIsFollowPov}
-            >
-              {isFollowPov ? <Lock /> : <Unlock />}
-            </Toggle>
-          </div>
+          <PovToggle
+            isFollowPov={isFollowPov}
+            setIsFollowPov={setIsFollowPov}
+            className="absolute bottom-[24px] right-[60px] z-10"
+          />
         )}
         <Button
           className={`absolute bottom-[24px] h-[40px] left-1/2 -translate-x-1/2 text-lg font-normal z-10 ${
