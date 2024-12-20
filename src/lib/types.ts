@@ -1,10 +1,5 @@
 import { Libraries } from "@react-google-maps/api";
 
-export type MapState = {
-  center: google.maps.LatLngLiteral;
-  zoom: number;
-};
-
 export type ControlStatus = {
   isControlled: boolean;
   controllerId: string | null;

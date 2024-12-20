@@ -14,7 +14,6 @@ import {
   DEFAULT_ZOOM,
   MAP_BOUNDS_RESTRICTION,
   MAP_ID,
-  type MapState,
   libraries,
 } from "@/lib/types";
 import PovToggle from "./pov-toggle";
@@ -33,10 +32,6 @@ export default function Map({
   const markerRef =
     React.useRef<google.maps.marker.AdvancedMarkerElement>(null);
 
-  const [mapState, setMapState] = React.useState<MapState>({
-    center: initialCenter,
-    zoom: initialZoom,
-  });
   const [inControl, setInControl] = React.useState(false);
   const [isControlled, setIsControlled] = React.useState(false);
   const [inPano, setInPano] = React.useState(false);
@@ -139,6 +134,9 @@ export default function Map({
   const onLoad = React.useCallback(
     (map: google.maps.Map) => {
       mapRef.current = map;
+      mapRef.current.setCenter(initialCenter);
+      mapRef.current.setZoom(initialZoom);
+
       panoRef.current = map.getStreetView();
       panoRef.current.setOptions(panoOptions);
 
@@ -163,18 +161,12 @@ export default function Map({
         panoRef.current.addListener("position_changed", () => {
           const position = panoRef.current?.getPosition();
           if (position) {
-            setMapState((prev) => ({
-              ...prev,
-              center: {
-                lat: position.lat(),
-                lng: position.lng(),
-              },
-            }));
+            mapRef.current?.setCenter(position);
           }
         });
       }
     },
-    [panoOptions]
+    [initialCenter, initialZoom, panoOptions]
   );
 
   React.useEffect(() => {
@@ -207,16 +199,9 @@ export default function Map({
   }, []);
 
   const handleUpdateMap = React.useCallback(() => {
-    if (inControl) {
-      const center = mapRef.current?.getCenter();
-      const zoom = mapRef.current?.getZoom();
-      if (center && zoom) {
-        setMapState({
-          center: { lat: center.lat(), lng: center.lng() },
-          zoom,
-        });
-        socket.emit("updateMap", mapRef.current?.getBounds());
-      }
+    if (inControl && mapRef.current?.getBounds()) {
+      const bounds = mapRef.current.getBounds();
+      socket.emit("updateMap", bounds);
     }
   }, [inControl]);
 
@@ -244,8 +229,6 @@ export default function Map({
 
     return (
       <GoogleMap
-        center={mapState.center}
-        zoom={mapState.zoom}
         onLoad={onLoad}
         onUnmount={onUnmount}
         onDragEnd={handleUpdateMap}
@@ -336,8 +319,6 @@ export default function Map({
     isLoaded,
     isFollowPov,
     loadError,
-    mapState.center,
-    mapState.zoom,
     onLoad,
     onUnmount,
     onlineClients,
