@@ -111,6 +111,7 @@ export default function Map() {
       socket.off("onlineClients", onOnlineClients);
       socket.off("marker", onMarker);
       socket.off("updatePov", onUpdatePov);
+      socket.disconnect();
     };
   }, []);
 
