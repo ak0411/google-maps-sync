@@ -48,7 +48,9 @@ export default function Map({
     socket.connect();
 
     function updateMap(bounds: google.maps.LatLngBounds) {
-      mapRef.current?.fitBounds(bounds);
+      if (mapRef.current) {
+        mapRef.current.fitBounds(bounds, 0);
+      }
     }
 
     function onControlStatus(status: ControlStatus) {
@@ -231,8 +233,7 @@ export default function Map({
       <GoogleMap
         onLoad={onLoad}
         onUnmount={onUnmount}
-        onDragEnd={handleUpdateMap}
-        onZoomChanged={handleUpdateMap}
+        onTilesLoaded={handleUpdateMap}
         mapContainerStyle={{
           height: "100vh",
           width: "100%",
