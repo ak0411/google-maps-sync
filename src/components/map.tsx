@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { useJsApiLoader, GoogleMap, Libraries } from "@react-google-maps/api";
+import { useJsApiLoader, GoogleMap } from "@react-google-maps/api";
 import { Button } from "./ui/button";
 import { Lock, Unlock, Users } from "lucide-react";
 import { socket } from "@/socket";
@@ -9,43 +9,45 @@ import GooglePlacesAutocomplete, {
   geocodeByPlaceId,
 } from "react-google-places-autocomplete";
 import { Toggle } from "./ui/toggle";
+import {
+  type ControlStatus,
+  DEFAULT_CENTER,
+  DEFAULT_ZOOM,
+  MAP_BOUNDS_RESTRICTION,
+  MAP_ID,
+  type MapState,
+  libraries,
+} from "@/lib/types";
 
-type MapState = {
-  center: google.maps.LatLngLiteral;
-  zoom: number;
+export type MapProps = {
+  initialCenter?: google.maps.LatLngLiteral;
+  initialZoom?: number;
 };
 
-type ControlStatus = {
-  isControlled: boolean;
-  controllerId: string | null;
-};
-
-const libraries: Libraries = ["places", "marker"];
-
-export default function Map() {
+export default function Map({
+  initialCenter = DEFAULT_CENTER,
+  initialZoom = DEFAULT_ZOOM,
+}: MapProps) {
   const mapRef = React.useRef<google.maps.Map>(null);
   const panoRef = React.useRef<google.maps.StreetViewPanorama>(null);
   const markerRef =
     React.useRef<google.maps.marker.AdvancedMarkerElement>(null);
+
+  const [mapState, setMapState] = React.useState<MapState>({
+    center: initialCenter,
+    zoom: initialZoom,
+  });
   const [inControl, setInControl] = React.useState(false);
   const [isControlled, setIsControlled] = React.useState(false);
-  const [mapState, setMapState] = React.useState<MapState>({
-    center: { lat: 59.64372637586483, lng: 17.08156655575136 },
-    zoom: 17,
-  });
-  const [onlineClients, setOnlineClients] = React.useState(0);
   const [inPano, setInPano] = React.useState(false);
   const [isFollowPov, setIsFollowPov] = React.useState(false);
+  const [onlineClients, setOnlineClients] = React.useState(1);
 
   const { isLoaded, loadError } = useJsApiLoader({
     id: "google-map-script",
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY as string,
     libraries,
   });
-
-  React.useEffect(() => {
-    console.log(isFollowPov);
-  }, [isFollowPov]);
 
   React.useEffect(() => {
     socket.connect();
@@ -253,18 +255,10 @@ export default function Map() {
           width: "100%",
         }}
         options={{
-          mapId: "4cc7186171a056a2",
+          mapId: MAP_ID,
           minZoom: 2,
           fullscreenControl: false,
-          restriction: {
-            latLngBounds: {
-              north: 85,
-              south: -85,
-              west: -180,
-              east: 180,
-            },
-            strictBounds: false,
-          },
+          restriction: MAP_BOUNDS_RESTRICTION,
           gestureHandling: inControl ? "auto" : "none",
           streetViewControl: inControl,
           zoomControl: inControl,
@@ -301,14 +295,15 @@ export default function Map() {
           </div>
         )}
         {inControl && inPano && (
-          <Toggle
-            className="absolute bottom-[24px] right-[60px] z-10 size-[40px] dark bg-[#444444] shadow-lg text-gray-300"
-            pressed={isFollowPov}
-            onPressedChange={setIsFollowPov}
-            size="lg"
-          >
-            {isFollowPov ? <Lock /> : <Unlock />}
-          </Toggle>
+          <div className="absolute bottom-[24px] right-[60px] z-10 flex dark shadow-lg bg-[#444444] text-gray-300">
+            <Toggle
+              className="size-[40px]"
+              pressed={isFollowPov}
+              onPressedChange={setIsFollowPov}
+            >
+              {isFollowPov ? <Lock /> : <Unlock />}
+            </Toggle>
+          </div>
         )}
         <Button
           className={`absolute bottom-[24px] h-[40px] left-1/2 -translate-x-1/2 text-lg font-normal z-10 ${
