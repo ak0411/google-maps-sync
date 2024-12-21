@@ -2,12 +2,8 @@
 
 import React from "react";
 import { useJsApiLoader, GoogleMap } from "@react-google-maps/api";
-import { Button } from "./ui/button";
-import { Users } from "lucide-react";
 import { socket } from "@/socket";
-import GooglePlacesAutocomplete, {
-  geocodeByPlaceId,
-} from "react-google-places-autocomplete";
+import { geocodeByPlaceId } from "react-google-places-autocomplete";
 import {
   type ControlStatus,
   DEFAULT_CENTER,
@@ -17,6 +13,9 @@ import {
   libraries,
 } from "@/lib/types";
 import PovToggle from "./pov-toggle";
+import LocationSearchBox from "./location-search";
+import ControlButton from "./control-button";
+import ClientInfo from "./client-info";
 
 export type MapProps = {
   initialCenter?: google.maps.LatLngLiteral;
@@ -83,7 +82,7 @@ export default function Map({
     }
 
     function onMarker(location: google.maps.LatLng) {
-      placeMarker(location);
+      handlePlaceMarker(location);
     }
 
     function onUpdatePov(pov: google.maps.StreetViewPov) {
@@ -200,14 +199,13 @@ export default function Map({
     panoRef.current = null;
   }, []);
 
-  const handleUpdateMap = React.useCallback(() => {
-    if (inControl && mapRef.current?.getBounds()) {
-      const bounds = mapRef.current.getBounds();
-      socket.emit("updateMap", bounds);
-    }
+  const handleMapChange = React.useCallback(() => {
+    if (!inControl || !mapRef.current) return;
+    const bounds = mapRef.current.getBounds();
+    socket.emit("updateMap", bounds);
   }, [inControl]);
 
-  const handleControl = React.useCallback(() => {
+  const handleControlClick = React.useCallback(() => {
     if (!inControl) {
       socket.emit("takeControl");
     } else {
@@ -215,7 +213,27 @@ export default function Map({
     }
   }, [inControl]);
 
-  const placeMarker = (position: google.maps.LatLng) => {
+  const handlePlaceSelect = React.useCallback(async (placeId: string) => {
+    if (!mapRef.current) return;
+
+    try {
+      const results = await geocodeByPlaceId(placeId);
+      const geometry = results[0].geometry;
+
+      if (geometry.bounds) {
+        mapRef.current.fitBounds(geometry.bounds);
+      } else {
+        mapRef.current.setCenter(geometry.location);
+        mapRef.current.setZoom(17);
+      }
+      handlePlaceMarker(geometry.location);
+      socket.emit("marker", geometry.location);
+    } catch (error) {
+      console.error("Error getting location: ", error);
+    }
+  }, []);
+
+  const handlePlaceMarker = (position: google.maps.LatLng) => {
     if (markerRef.current) {
       markerRef.current.map = null;
     }
@@ -233,7 +251,7 @@ export default function Map({
       <GoogleMap
         onLoad={onLoad}
         onUnmount={onUnmount}
-        onTilesLoaded={handleUpdateMap}
+        onTilesLoaded={handleMapChange}
         mapContainerStyle={{
           height: "100vh",
           width: "100%",
@@ -250,33 +268,10 @@ export default function Map({
         }}
       >
         {inControl && !inPano && (
-          <div className="absolute top-[100px] lg:top-[10px] h-[40px] left-1/2 -translate-x-1/2 w-11/12 sm:w-[500px]">
-            <GooglePlacesAutocomplete
-              selectProps={{
-                onChange: async (newValue) => {
-                  if (newValue && newValue.value && mapRef.current) {
-                    try {
-                      const results = await geocodeByPlaceId(
-                        newValue.value.place_id
-                      );
-                      const geometry = results[0].geometry;
-
-                      if (geometry.bounds) {
-                        mapRef.current.fitBounds(geometry.bounds);
-                      } else {
-                        mapRef.current.setCenter(geometry.location);
-                        mapRef.current.setZoom(17);
-                      }
-                      placeMarker(geometry.location);
-                      socket.emit("marker", geometry.location);
-                    } catch (error) {
-                      console.error("Error getting location: ", error);
-                    }
-                  }
-                },
-              }}
-            />
-          </div>
+          <LocationSearchBox
+            onPlaceSelect={handlePlaceSelect}
+            className="absolute top-[100px] lg:top-[10px] left-1/2 -translate-x-1/2"
+          />
         )}
         {inControl && inPano && (
           <PovToggle
@@ -285,43 +280,32 @@ export default function Map({
             className="absolute bottom-[24px] right-[60px] z-10"
           />
         )}
-        <Button
-          className={`absolute bottom-[24px] h-[40px] left-1/2 -translate-x-1/2 text-lg font-normal z-10 ${
-            inPano && "dark text-white"
-          }`}
-          variant={inControl ? "destructive" : "outline"}
-          onClick={handleControl}
-          disabled={isControlled && !inControl}
-        >
-          {inControl ? "Give Control" : "Take Control"}
-        </Button>
-        <div className="absolute right-[10px] top-[10px] shadow-md flex z-10">
-          <Button
-            variant="secondary"
-            className={`h-[40px] text-lg ${inPano && "dark opacity-85"}`}
-          >
-            {onlineClients}
-          </Button>
-          <Button
-            variant="outline"
-            className={`h-[40px] ${inPano && "dark text-white opacity-85"}`}
-          >
-            <Users />
-          </Button>
-        </div>
+        <ControlButton
+          inControl={inControl}
+          inPano={inPano}
+          isControlled={isControlled}
+          onControlClick={handleControlClick}
+          className="absolute bottom-[24px] left-1/2 -translate-x-1/2 z-10"
+        />
+        <ClientInfo
+          count={onlineClients}
+          inPano={inPano}
+          className="absolute right-[10px] top-[10px] z-10"
+        />
       </GoogleMap>
     );
   }, [
-    handleControl,
-    handleUpdateMap,
-    inControl,
-    inPano,
-    isControlled,
-    isLoaded,
-    isFollowPov,
     loadError,
+    isLoaded,
     onLoad,
     onUnmount,
+    handleMapChange,
+    inControl,
+    inPano,
+    handlePlaceSelect,
+    isFollowPov,
+    handleControlClick,
+    isControlled,
     onlineClients,
   ]);
 }
