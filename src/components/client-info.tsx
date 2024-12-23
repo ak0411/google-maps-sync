@@ -1,6 +1,6 @@
 import React from "react";
 import { Button } from "./ui/button";
-import { CircleUserRound, Users } from "lucide-react";
+import { CircleUserRound, Crown, Users } from "lucide-react";
 import { twMerge } from "tailwind-merge";
 import {
   DropdownMenu,
@@ -13,20 +13,27 @@ import {
 import { DropdownMenuItem } from "@radix-ui/react-dropdown-menu";
 
 type Props = {
-  currentClient: string;
-  clients: string[];
+  currentController: string | null;
+  currentSocketId: string;
+  connectedClients: Record<string, string>;
   inPano: boolean;
   className?: string;
 };
 
-function ClientInfo({ currentClient, clients, inPano, className }: Props) {
+function ClientInfo({
+  currentController,
+  currentSocketId,
+  connectedClients,
+  inPano,
+  className,
+}: Props) {
   return (
     <div className={twMerge("shadow-md flex", className)}>
       <Button
         variant="secondary"
         className={`h-[40px] text-lg ${inPano && "dark opacity-85"}`}
       >
-        {clients.length}
+        {Object.keys(connectedClients).length}
       </Button>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
@@ -46,18 +53,27 @@ function ClientInfo({ currentClient, clients, inPano, className }: Props) {
               className="flex gap-2 items-center font-bold"
             >
               <CircleUserRound />
-              {currentClient}
-              <DropdownMenuShortcut>Me</DropdownMenuShortcut>
+              {connectedClients[currentSocketId]} (Me)
+              {currentSocketId === currentController && (
+                <DropdownMenuShortcut>
+                  <Crown />
+                </DropdownMenuShortcut>
+              )}
             </DropdownMenuItem>
-            {clients.map((client, i) => {
-              if (client === currentClient) return;
+            {Object.entries(connectedClients).map(([key, client]) => {
+              if (key === currentSocketId) return null;
               return (
                 <DropdownMenuItem
-                  key={i}
+                  key={key}
                   disabled
                   className="flex gap-2 items-center"
                 >
                   <CircleUserRound /> {client}
+                  {key === currentController && (
+                    <DropdownMenuShortcut>
+                      <Crown />
+                    </DropdownMenuShortcut>
+                  )}
                 </DropdownMenuItem>
               );
             })}

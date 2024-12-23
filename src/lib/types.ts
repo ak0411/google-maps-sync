@@ -1,10 +1,5 @@
 import { Libraries } from "@react-google-maps/api";
 
-export type ControlStatus = {
-  isControlled: boolean;
-  controllerId: string | null;
-};
-
 export const DEFAULT_CENTER = {
   lat: 59.64372637586483,
   lng: 17.08156655575136,

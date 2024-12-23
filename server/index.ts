@@ -28,8 +28,7 @@ app.prepare().then(() => {
     }
 
     connectedClients.set(socket.id, clientName);
-    socket.emit("clientJoined", clientName);
-    io.emit("updateClients", Array.from(connectedClients.values()));
+    io.emit("updateClients", Object.fromEntries(connectedClients));
 
     socket.emit("controlStatus", currentController);
 
@@ -93,7 +92,7 @@ app.prepare().then(() => {
         connectedClients.delete(socket.id);
         socket.broadcast.emit(
           "updateClients",
-          Array.from(connectedClients.values())
+          Object.fromEntries(connectedClients)
         );
       }
 

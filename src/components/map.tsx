@@ -35,8 +35,8 @@ export default function Map({
   >(null);
   const [inPano, setInPano] = React.useState(false);
   const [isFollowPov, setIsFollowPov] = React.useState(false);
-  const [currentClient, setCurrentClient] = React.useState<string | null>(null);
-  const [clients, setClients] = React.useState<string[]>([]);
+  const [connectedClients, setConnectedClients] =
+    React.useState<Record<string, string>>();
 
   const { isLoaded, loadError } = useJsApiLoader({
     id: "google-map-script",
@@ -87,12 +87,8 @@ export default function Map({
       }
     }
 
-    function onClientJoined(name: string) {
-      setCurrentClient(name);
-    }
-
-    function onUpdateClients(clientNames: string[]) {
-      setClients(clientNames);
+    function onUpdateClients(clients: Record<string, string>) {
+      setConnectedClients(clients);
     }
 
     socket.on("updateMap", updateMap);
@@ -102,7 +98,6 @@ export default function Map({
     socket.on("updatePano", onUpdatePano);
     socket.on("marker", onMarker);
     socket.on("updatePov", onUpdatePov);
-    socket.on("clientJoined", onClientJoined);
     socket.on("updateClients", onUpdateClients);
 
     return () => {
@@ -113,7 +108,6 @@ export default function Map({
       socket.off("updatePano", onUpdatePano);
       socket.off("marker", onMarker);
       socket.off("updatePov", onUpdatePov);
-      socket.on("clientJoined", onClientJoined);
       socket.off("updateClients", onUpdateClients);
       socket.disconnect();
     };
@@ -303,10 +297,11 @@ export default function Map({
           onControlClick={handleControlClick}
           className="absolute bottom-[24px] left-1/2 -translate-x-1/2 z-10"
         />
-        {currentClient && (
+        {socket.id && connectedClients && (
           <ClientInfo
-            currentClient={currentClient}
-            clients={clients}
+            currentController={currentController}
+            currentSocketId={socket.id}
+            connectedClients={connectedClients}
             inPano={inPano}
             className="absolute right-[10px] top-[10px] z-10"
           />
@@ -325,7 +320,7 @@ export default function Map({
     isFollowPov,
     isControlled,
     handleControlClick,
-    currentClient,
-    clients,
+    connectedClients,
+    currentController,
   ]);
 }
