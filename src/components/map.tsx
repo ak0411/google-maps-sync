@@ -35,7 +35,8 @@ export default function Map({
   const [isControlled, setIsControlled] = React.useState(false);
   const [inPano, setInPano] = React.useState(false);
   const [isFollowPov, setIsFollowPov] = React.useState(false);
-  const [onlineClients, setOnlineClients] = React.useState(1);
+  const [currentClient, setCurrentClient] = React.useState<string | null>(null);
+  const [clients, setClients] = React.useState<string[]>([]);
 
   const { isLoaded, loadError } = useJsApiLoader({
     id: "google-map-script",
@@ -77,10 +78,6 @@ export default function Map({
       }
     }
 
-    function onOnlineClients(onlineClients: number) {
-      setOnlineClients(onlineClients);
-    }
-
     function onMarker(location: google.maps.LatLng) {
       handlePlaceMarker(location);
     }
@@ -91,14 +88,23 @@ export default function Map({
       }
     }
 
+    function onClientJoined(name: string) {
+      setCurrentClient(name);
+    }
+
+    function onUpdateClients(clientNames: string[]) {
+      setClients(clientNames);
+    }
+
     socket.on("updateMap", updateMap);
     socket.on("controlStatus", onControlStatus);
     socket.on("panoramaVisible", onPanoramaVisible);
     socket.on("panoramaHidden", onPanoramaHidden);
     socket.on("updatePano", onUpdatePano);
-    socket.on("onlineClients", onOnlineClients);
     socket.on("marker", onMarker);
     socket.on("updatePov", onUpdatePov);
+    socket.on("clientJoined", onClientJoined);
+    socket.on("updateClients", onUpdateClients);
 
     return () => {
       socket.off("updateMap", updateMap);
@@ -106,9 +112,10 @@ export default function Map({
       socket.off("panoramaVisible", onPanoramaVisible);
       socket.off("panoramaHidden", onPanoramaHidden);
       socket.off("updatePano", onUpdatePano);
-      socket.off("onlineClients", onOnlineClients);
       socket.off("marker", onMarker);
       socket.off("updatePov", onUpdatePov);
+      socket.on("clientJoined", onClientJoined);
+      socket.off("updateClients", onUpdateClients);
       socket.disconnect();
     };
   }, []);
@@ -287,11 +294,14 @@ export default function Map({
           onControlClick={handleControlClick}
           className="absolute bottom-[24px] left-1/2 -translate-x-1/2 z-10"
         />
-        <ClientInfo
-          count={onlineClients}
-          inPano={inPano}
-          className="absolute right-[10px] top-[10px] z-10"
-        />
+        {currentClient && (
+          <ClientInfo
+            currentClient={currentClient}
+            clients={clients}
+            inPano={inPano}
+            className="absolute right-[10px] top-[10px] z-10"
+          />
+        )}
       </GoogleMap>
     );
   }, [
@@ -304,8 +314,9 @@ export default function Map({
     inPano,
     handlePlaceSelect,
     isFollowPov,
-    handleControlClick,
     isControlled,
-    onlineClients,
+    handleControlClick,
+    currentClient,
+    clients,
   ]);
 }

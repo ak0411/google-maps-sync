@@ -1,6 +1,7 @@
 import { createServer } from "node:http";
 import next from "next";
 import { Server } from "socket.io";
+import { ClientNameGenerator } from "./clientNameGenerator";
 
 const dev = process.env.NODE_ENV !== "production";
 const hostname = "localhost";
@@ -14,13 +15,21 @@ app.prepare().then(() => {
   const io = new Server(httpServer);
 
   let currentController: string | null = null;
-  const clients = new Set();
+  const nameGenerator = new ClientNameGenerator();
+  const connectedClients: Map<string, string> = new Map();
 
   io.on("connection", (socket) => {
     console.log(`Client connected: ${socket.id}`);
+    let clientName = nameGenerator.getAvailableName();
 
-    clients.add(socket.id);
-    io.emit("onlineClients", clients.size);
+    // Use a temporary backup name when all available name is taken
+    if (!clientName) {
+      clientName = `Guest#${Math.floor(Math.random() * 10000)}`;
+    }
+
+    connectedClients.set(socket.id, clientName);
+    socket.emit("clientJoined", clientName);
+    io.emit("updateClients", Array.from(connectedClients.values()));
 
     socket.emit("controlStatus", {
       isControlled: !!currentController,
@@ -86,8 +95,16 @@ app.prepare().then(() => {
 
     socket.on("disconnect", () => {
       console.log(`Client disconnected: ${socket.id}`);
-      clients.delete(socket.id);
-      io.emit("onlineClients", clients.size);
+
+      const name = connectedClients.get(socket.id);
+      if (name) {
+        nameGenerator.releaseName(name);
+        connectedClients.delete(socket.id);
+        socket.broadcast.emit(
+          "updateClients",
+          Array.from(connectedClients.values())
+        );
+      }
 
       if (currentController === socket.id) {
         currentController = null;
