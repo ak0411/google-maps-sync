@@ -31,28 +31,19 @@ app.prepare().then(() => {
     socket.emit("clientJoined", clientName);
     io.emit("updateClients", Array.from(connectedClients.values()));
 
-    socket.emit("controlStatus", {
-      isControlled: !!currentController,
-      controllerId: currentController,
-    });
+    socket.emit("controlStatus", currentController);
 
     socket.on("takeControl", () => {
       if (!currentController) {
         currentController = socket.id;
-        io.emit("controlStatus", {
-          isControlled: true,
-          controllerId: currentController,
-        });
+        io.emit("controlStatus", currentController);
       }
     });
 
     socket.on("giveControl", () => {
       if (currentController === socket.id) {
         currentController = null;
-        io.emit("controlStatus", {
-          isControlled: false,
-          controllerId: null,
-        });
+        io.emit("controlStatus", currentController);
       }
     });
 
@@ -108,10 +99,7 @@ app.prepare().then(() => {
 
       if (currentController === socket.id) {
         currentController = null;
-        socket.broadcast.emit("controlStatus", {
-          isControlled: false,
-          controllerId: null,
-        });
+        socket.broadcast.emit("controlStatus", currentController);
         socket.broadcast.emit("panoramaHidden");
       }
     });

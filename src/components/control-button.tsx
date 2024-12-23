@@ -25,7 +25,7 @@ function ControlButton({
       )}
       variant={inControl ? "destructive" : "outline"}
       onClick={onControlClick}
-      disabled={isControlled && !inControl}
+      disabled={isControlled}
     >
       {inControl ? "Give Control" : "Take Control"}
     </Button>

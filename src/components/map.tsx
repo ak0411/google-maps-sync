@@ -5,7 +5,6 @@ import { useJsApiLoader, GoogleMap } from "@react-google-maps/api";
 import { socket } from "@/socket";
 import { geocodeByPlaceId } from "react-google-places-autocomplete";
 import {
-  type ControlStatus,
   DEFAULT_CENTER,
   DEFAULT_ZOOM,
   MAP_BOUNDS_RESTRICTION,
@@ -31,8 +30,9 @@ export default function Map({
   const markerRef =
     React.useRef<google.maps.marker.AdvancedMarkerElement>(null);
 
-  const [inControl, setInControl] = React.useState(false);
-  const [isControlled, setIsControlled] = React.useState(false);
+  const [currentController, setCurrentController] = React.useState<
+    string | null
+  >(null);
   const [inPano, setInPano] = React.useState(false);
   const [isFollowPov, setIsFollowPov] = React.useState(false);
   const [currentClient, setCurrentClient] = React.useState<string | null>(null);
@@ -53,9 +53,8 @@ export default function Map({
       }
     }
 
-    function onControlStatus(status: ControlStatus) {
-      setIsControlled(status.isControlled);
-      setInControl(status.controllerId === socket.id);
+    function onControlStatus(currentController: string | null) {
+      setCurrentController(currentController);
     }
 
     function onPanoramaVisible() {
@@ -119,6 +118,16 @@ export default function Map({
       socket.disconnect();
     };
   }, []);
+
+  const inControl = React.useMemo(
+    () => currentController === socket.id,
+    [currentController]
+  );
+
+  const isControlled = React.useMemo(
+    () => currentController !== null && currentController !== socket.id,
+    [currentController]
+  );
 
   const panoOptions: google.maps.StreetViewPanoramaOptions = React.useMemo(
     () => ({
@@ -289,8 +298,8 @@ export default function Map({
         )}
         <ControlButton
           inControl={inControl}
-          inPano={inPano}
           isControlled={isControlled}
+          inPano={inPano}
           onControlClick={handleControlClick}
           className="absolute bottom-[24px] left-1/2 -translate-x-1/2 z-10"
         />
