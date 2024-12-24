@@ -113,15 +113,9 @@ export default function Map({
     };
   }, []);
 
-  const inControl = React.useMemo(
-    () => currentController === socket.id,
-    [currentController]
-  );
-
-  const isControlled = React.useMemo(
-    () => currentController !== null && currentController !== socket.id,
-    [currentController]
-  );
+  const inControl = currentController === socket.id;
+  const isControlled =
+    currentController !== null && currentController !== socket.id;
 
   const panoOptions: google.maps.StreetViewPanoramaOptions = React.useMemo(
     () => ({
@@ -215,15 +209,15 @@ export default function Map({
     socket.emit("updateMap", bounds);
   }, [inControl]);
 
-  const handleControlClick = React.useCallback(() => {
+  const handleControlClick = () => {
     if (!inControl) {
       socket.emit("takeControl");
     } else {
       socket.emit("giveControl");
     }
-  }, [inControl]);
+  };
 
-  const handlePlaceSelect = React.useCallback(async (placeId: string) => {
+  const handlePlaceSelect = async (placeId: string) => {
     if (!mapRef.current) return;
 
     try {
@@ -241,7 +235,7 @@ export default function Map({
     } catch (error) {
       console.error("Error getting location: ", error);
     }
-  }, []);
+  };
 
   const handlePlaceMarker = (position: google.maps.LatLng) => {
     if (markerRef.current) {
@@ -253,11 +247,8 @@ export default function Map({
     });
   };
 
-  return React.useMemo(() => {
-    if (loadError) return <div>Error loading maps</div>;
-    if (!isLoaded) return <div>Loading...</div>;
-
-    return (
+  const MemoizedGoogleMap = React.useMemo(
+    () => (
       <GoogleMap
         onLoad={onLoad}
         onUnmount={onUnmount}
@@ -276,51 +267,46 @@ export default function Map({
           zoomControl: inControl,
           keyboardShortcuts: false,
         }}
-      >
-        {inControl && !inPano && (
-          <LocationSearchBox
-            onPlaceSelect={handlePlaceSelect}
-            className="absolute top-[100px] lg:top-[10px] left-1/2 -translate-x-1/2"
-          />
-        )}
-        {inControl && inPano && (
-          <PovToggle
-            isFollowPov={isFollowPov}
-            setIsFollowPov={setIsFollowPov}
-            className="absolute bottom-[24px] right-[60px] z-10"
-          />
-        )}
-        <ControlButton
-          inControl={inControl}
-          isControlled={isControlled}
-          inPano={inPano}
-          onControlClick={handleControlClick}
-          className="absolute bottom-[24px] left-1/2 -translate-x-1/2 z-10"
+      />
+    ),
+    [onLoad, onUnmount, handleMapChange, inControl]
+  );
+
+  if (loadError) return <div>Error loading maps</div>;
+  if (!isLoaded) return <div>Loading...</div>;
+
+  return (
+    <div className="size-full">
+      {MemoizedGoogleMap}
+      {inControl && !inPano && (
+        <LocationSearchBox
+          onPlaceSelect={handlePlaceSelect}
+          className="absolute top-[100px] lg:top-[10px] left-1/2 -translate-x-1/2"
         />
-        {socket.id && connectedClients && (
-          <ClientInfo
-            currentController={currentController}
-            currentSocketId={socket.id}
-            connectedClients={connectedClients}
-            inPano={inPano}
-            className="absolute right-[10px] top-[10px] z-10"
-          />
-        )}
-      </GoogleMap>
-    );
-  }, [
-    loadError,
-    isLoaded,
-    onLoad,
-    onUnmount,
-    handleMapChange,
-    inControl,
-    inPano,
-    handlePlaceSelect,
-    isFollowPov,
-    isControlled,
-    handleControlClick,
-    connectedClients,
-    currentController,
-  ]);
+      )}
+      {inControl && inPano && (
+        <PovToggle
+          isFollowPov={isFollowPov}
+          setIsFollowPov={setIsFollowPov}
+          className="absolute bottom-[24px] right-[60px] z-10"
+        />
+      )}
+      <ControlButton
+        inControl={inControl}
+        isControlled={isControlled}
+        inPano={inPano}
+        onControlClick={handleControlClick}
+        className="absolute bottom-[24px] left-1/2 -translate-x-1/2 z-10"
+      />
+      {socket.id && connectedClients && (
+        <ClientInfo
+          currentController={currentController}
+          currentSocketId={socket.id}
+          connectedClients={connectedClients}
+          inPano={inPano}
+          className="absolute right-[10px] top-[10px] z-10"
+        />
+      )}
+    </div>
+  );
 }
