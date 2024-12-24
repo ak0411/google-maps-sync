@@ -20,6 +20,37 @@ type Props = {
   className?: string;
 };
 
+function extractColorFromName(name: string): string {
+  const validColors = [
+    "slate",
+    "gray",
+    "zinc",
+    "neutral",
+    "stone",
+    "red",
+    "orange",
+    "amber",
+    "yellow",
+    "lime",
+    "green",
+    "emerald",
+    "teal",
+    "cyan",
+    "sky",
+    "blue",
+    "indigo",
+    "violet",
+    "purple",
+    "fuchsia",
+    "pink",
+    "rose",
+  ];
+
+  const color = name.split(" ")[0].toLowerCase();
+  console.log(name, color);
+  return validColors.includes(color) ? color : "gray";
+}
+
 function ClientInfo({
   currentController,
   currentSocketId,
@@ -44,18 +75,29 @@ function ClientInfo({
             <Users />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent className="w-[250px]">
+        <DropdownMenuContent
+          className={`${inPano && "dark"}`}
+          align="end"
+          alignOffset={0.5}
+        >
           <DropdownMenuLabel>Users</DropdownMenuLabel>
           <DropdownMenuSeparator />
-          <div className="space-y-2 font-mono">
+          <div className="space-y-2 px-2 py-1 min-w-[250px]">
             <DropdownMenuItem
               disabled
               className="flex gap-2 items-center font-bold"
             >
-              <CircleUserRound />
+              <CircleUserRound
+                className={twMerge(
+                  `bg-${extractColorFromName(
+                    connectedClients[currentSocketId]
+                  )}-500`,
+                  "rounded-full"
+                )}
+              />
               {connectedClients[currentSocketId]} (Me)
               {currentSocketId === currentController && (
-                <DropdownMenuShortcut>
+                <DropdownMenuShortcut className="text-yellow-500 opacity-100">
                   <Crown />
                 </DropdownMenuShortcut>
               )}
@@ -68,7 +110,13 @@ function ClientInfo({
                   disabled
                   className="flex gap-2 items-center"
                 >
-                  <CircleUserRound /> {client}
+                  <CircleUserRound
+                    className={twMerge(
+                      `bg-${extractColorFromName(client)}-500`,
+                      "rounded-full"
+                    )}
+                  />{" "}
+                  {client}
                   {key === currentController && (
                     <DropdownMenuShortcut>
                       <Crown />
