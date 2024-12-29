@@ -24,14 +24,24 @@ export class ClientNameGenerator {
     "Rose",
   ];
   private readonly animals: string[] = [
-    "Tiger",
-    "Shark",
-    "Monkey",
-    "Elephant",
-    "Eagle",
-    "Dolphin",
+    "Cat",
     "Panda",
-    "Wolf",
+    "Bear",
+    "Rabbit",
+    "Chicken",
+    "Dog",
+    "Gorilla",
+    "Koala",
+    "Meerkat",
+    "Duck",
+    "Giraffe",
+    "Hippopotamus",
+    "Dragon",
+    "Shark",
+    "Sloth",
+    "Penguin",
+    "Lion",
+    "Weasel",
   ];
   private usedCombinations: Set<string> = new Set();
 
