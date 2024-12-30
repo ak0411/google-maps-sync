@@ -14,7 +14,7 @@ import {
 import PovToggle from "./pov-toggle";
 import LocationSearchBox from "./location-search";
 import ControlButton from "./control-button";
-import ClientInfo from "./client-info";
+import ClientInfo, { ClientAvatar } from "./client-info";
 
 export type MapProps = {
   initialCenter?: google.maps.LatLngLiteral;
@@ -294,6 +294,20 @@ export default function Map({
           className="absolute bottom-[24px] right-[60px] z-10"
         />
       )}
+      {connectedClients &&
+        currentController &&
+        connectedClients[currentController] && (
+          <div className="absolute z-10 left-1/2 -translate-x-1/2 bottom-20 flex flex-col items-center gap-1">
+            <ClientAvatar
+              name={connectedClients[currentController]}
+              side="top"
+              me={currentController === socket.id}
+            />
+            <span className="text-white text-sm font-medium bg-black/50 px-2 py-1 rounded-full">
+              Currently Controlling
+            </span>
+          </div>
+        )}
       <ControlButton
         inControl={inControl}
         isControlled={isControlled}
@@ -303,7 +317,6 @@ export default function Map({
       />
       {socket.id && connectedClients && (
         <ClientInfo
-          currentController={currentController}
           currentSocketId={socket.id}
           connectedClients={connectedClients}
           inPano={inPano}

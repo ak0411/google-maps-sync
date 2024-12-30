@@ -11,7 +11,6 @@ import { Button } from "./ui/button";
 import { ArrowRightToLine } from "lucide-react";
 
 type Props = {
-  currentController: string | null;
   currentSocketId: string;
   connectedClients: Record<string, string>;
   inPano: boolean;
@@ -57,7 +56,15 @@ function extractAnimalFromName(name: string): string {
   return parts[1].toLowerCase();
 }
 
-function ClientAvatar({ name, me = false }: { name: string; me?: boolean }) {
+export function ClientAvatar({
+  name,
+  me = false,
+  side = "bottom",
+}: {
+  name: string;
+  me?: boolean;
+  side?: "bottom" | "top" | "right" | "left" | undefined;
+}) {
   const color = extractColorFromName(name);
   const animal = extractAnimalFromName(name);
 
@@ -73,7 +80,7 @@ function ClientAvatar({ name, me = false }: { name: string; me?: boolean }) {
             </Avatar>
           </div>
         </TooltipTrigger>
-        <TooltipContent side="bottom">
+        <TooltipContent side={side}>
           <p>
             {name} {me && "(Me)"}
           </p>
@@ -84,7 +91,6 @@ function ClientAvatar({ name, me = false }: { name: string; me?: boolean }) {
 }
 
 function ClientInfo({
-  currentController,
   currentSocketId,
   connectedClients,
   inPano,
