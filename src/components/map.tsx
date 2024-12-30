@@ -276,7 +276,10 @@ export default function Map({
   if (!isLoaded) return <div>Loading...</div>;
 
   return (
-    <div className="size-full">
+    <div className="size-full relative">
+      {currentController === null && (
+        <div className="z-10 bg-black/50 size-full absolute" />
+      )}
       {MemoizedGoogleMap}
       {inControl && !inPano && (
         <LocationSearchBox
