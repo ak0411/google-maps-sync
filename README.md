@@ -35,17 +35,8 @@ When multiple users connect to the application, they join the same synchronized 
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app), featuring:
 
 - Next.js for the frontend framework
-- Real-time WebSocket communication
+- Socket.IO for real-time communication
 - Google Maps JavaScript API
-- Google Street View API
-
-## Learn More
-
-To learn more about the technologies used:
-
-- [Next.js Documentation](https://nextjs.org/docs)
-- [Google Maps JavaScript API](https://developers.google.com/maps/documentation/javascript)
-- [Google Street View API](https://developers.google.com/maps/documentation/javascript/streetview)
 
 ## Deployment
 
