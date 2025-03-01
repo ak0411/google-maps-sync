@@ -2,7 +2,6 @@
 
 import React from "react";
 import { useJsApiLoader, GoogleMap } from "@react-google-maps/api";
-import { socket } from "@/socket";
 import { geocodeByPlaceId } from "react-google-places-autocomplete";
 import {
   DEFAULT_CENTER,
@@ -15,6 +14,7 @@ import PovToggle from "./pov-toggle";
 import LocationSearchBox from "./location-search";
 import ControlButton from "./control-button";
 import ClientInfo, { ClientAvatar } from "./client-info";
+import { useSocket } from "@/SocketProvider";
 
 export type MapProps = {
   initialCenter?: google.maps.LatLngLiteral;
@@ -44,7 +44,11 @@ export default function Map({
     libraries,
   });
 
+  const socket = useSocket();
+
   React.useEffect(() => {
+    if (!socket) return;
+
     socket.connect();
 
     function updateMap(bounds: google.maps.LatLngBounds) {
@@ -111,11 +115,11 @@ export default function Map({
       socket.off("updateClients", onUpdateClients);
       socket.disconnect();
     };
-  }, []);
+  }, [socket]);
 
-  const inControl = currentController === socket.id;
+  const inControl = currentController === socket?.id;
   const isControlled =
-    currentController !== null && currentController !== socket.id;
+    currentController !== null && currentController !== socket?.id;
 
   const panoOptions: google.maps.StreetViewPanoramaOptions = React.useMemo(
     () => ({
@@ -148,10 +152,10 @@ export default function Map({
       if (panoRef.current) {
         panoRef.current.addListener("visible_changed", () => {
           if (panoRef.current?.getVisible()) {
-            socket.emit("panoramaVisible");
+            socket?.emit("panoramaVisible");
             setInPano(true);
           } else {
-            socket.emit("panoramaHidden");
+            socket?.emit("panoramaHidden");
             setInPano(false);
           }
         });
@@ -159,7 +163,7 @@ export default function Map({
         panoRef.current.addListener("pano_changed", () => {
           const panoId = panoRef.current?.getPano();
           if (panoId) {
-            socket.emit("updatePano", panoId);
+            socket?.emit("updatePano", panoId);
           }
         });
 
@@ -171,7 +175,7 @@ export default function Map({
         });
       }
     },
-    [initialCenter, initialZoom, panoOptions]
+    [initialCenter, initialZoom, panoOptions, socket]
   );
 
   React.useEffect(() => {
@@ -181,7 +185,7 @@ export default function Map({
         const pitch = panoRef.current?.getPov().pitch;
         if (heading && pitch) {
           const pov: google.maps.StreetViewPov = { heading, pitch };
-          socket.emit("updatePov", pov);
+          socket?.emit("updatePov", pov);
         }
       };
 
@@ -196,7 +200,7 @@ export default function Map({
         }
       };
     }
-  }, [isFollowPov]);
+  }, [isFollowPov, socket]);
 
   const onUnmount = React.useCallback(() => {
     mapRef.current = null;
@@ -207,11 +211,11 @@ export default function Map({
     if (!inControl || !mapRef.current) return;
     const bounds = mapRef.current.getBounds();
     socket.emit("updateMap", bounds);
-  }, [inControl]);
+  }, [inControl, socket]);
 
   const handleControlClick = () => {
     if (!inControl) {
-      socket.emit("takeControl");
+      socket?.emit("takeControl");
     } else {
       socket.emit("giveControl");
     }
@@ -231,7 +235,7 @@ export default function Map({
         mapRef.current.setZoom(17);
       }
       handlePlaceMarker(geometry.location);
-      socket.emit("marker", geometry.location);
+      socket?.emit("marker", geometry.location);
     } catch (error) {
       console.error("Error getting location: ", error);
     }
@@ -278,7 +282,7 @@ export default function Map({
   return (
     <div className="size-full relative">
       {currentController === null && (
-        <div className="z-10 bg-black/50 size-full absolute" />
+        <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/30" />
       )}
       {MemoizedGoogleMap}
       {inControl && !inPano && (
@@ -301,7 +305,7 @@ export default function Map({
             <ClientAvatar
               name={connectedClients[currentController]}
               side="top"
-              me={currentController === socket.id}
+              me={currentController === socket?.id}
             />
             <span className="text-white text-sm font-medium bg-black/50 px-2 py-1 rounded-full">
               Currently Controlling
@@ -315,7 +319,7 @@ export default function Map({
         onControlClick={handleControlClick}
         className="absolute bottom-[24px] left-1/2 -translate-x-1/2 z-10"
       />
-      {socket.id && connectedClients && (
+      {socket?.id && connectedClients && (
         <ClientInfo
           currentSocketId={socket.id}
           connectedClients={connectedClients}

@@ -44,7 +44,6 @@ function extractColorFromName(name: string): string {
   ];
 
   const color = name.split(" ")[0].toLowerCase();
-  console.log(name, color);
   return validColors.includes(color) ? color : "gray";
 }
 
